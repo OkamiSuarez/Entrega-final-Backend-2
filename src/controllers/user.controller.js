@@ -1,5 +1,6 @@
 import userService from "../services/user.service.js"
 import jwt from "jsonwebtoken"
+import UserDTO from "../dto/user.dto.js"
 
 class UserController{
     async register(req,res){
@@ -40,7 +41,11 @@ class UserController{
     async current(req,res){
         if(req.user){
             const user = req.user
-            res.render("home",{user})
+            const userDTO = new UserDTO(user)
+            // res.render("home",{user: userDTO})
+            res.render("profile",{user: UserDTO})
+            // aqui me manda a api sesions login 
+            // aqui lo mando diferente por que el  home es de otro 
         }else{
             res.send("No autorizado")
         }

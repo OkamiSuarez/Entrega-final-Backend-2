@@ -1,0 +1,3 @@
+Hay que armar lo mismo que ya tenemos pero para las demas, ahorita se hizo el de user pero faltaria el de carts y products
+
+en algunos lados esta como role y en otros como rol, mongo lo tiene como rol

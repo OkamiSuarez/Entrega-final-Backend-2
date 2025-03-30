@@ -172,4 +172,10 @@ router.put("/:cid/products/:pid", async (req, res) => {
     }
 })
 
+// esto solo de referencia por que hay que hacer el controler
+
+router.post("/:cid/purchase", async(req,res)=>{
+
+})
+
 export default router

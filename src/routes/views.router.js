@@ -7,8 +7,11 @@ import productModel from "../models/products.model.js";
 import cartModel from "../models/cart.model.js";
 // const manager = new ProductManager("./src/data/productos.json");
 
+// trayendo lo nuevo 
+import { soloAdmin, soloUser } from "../middleware/auth.js";
+
 // primer punto de entrega
-router.get("/products", async(req,res)=>{
+router.get("/products", soloUser,async(req,res)=>{
     const page = req.query.page || 1;
     const limit = 3
     const productos = await productModel.paginate({},{limit,page})
@@ -54,7 +57,7 @@ router.get("/cart/:cid", async(req,res)=>{
 })
 
 // segundo punto de  la pre entrega
-router.get("/realtimeproducts",(req,res)=>{
+router.get("/realtimeproducts", soloAdmin, (req,res)=>{
     res.render("realtimeproducts")
 })
 
