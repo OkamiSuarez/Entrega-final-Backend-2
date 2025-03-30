@@ -1,0 +1,49 @@
+<h2>Registro de usuario</h2>
+
+<form action="/api/sessions/register" method="POST">
+
+    <label for="first_name">First name</label>
+    <input type="text" name="first_name" required>
+    <br><br>
+
+    <label for="last_name">Last name</label>
+    <input type="text" name="last_name">
+    <br><br>
+
+    <label for="email">Email</label>
+    <input type="email" name="email" required>
+    <br><br>
+
+    <label for="age">Age</label>
+    <input type="number" name="age" required>
+    <br><br>
+
+    <label for="password">Password:</label>
+    <input type="password" name="password" required>
+    <br><br>
+
+    {{!-- <label for="usuario">Nombre de usuario</label>
+    <input type="text" name="usuario" required>
+    <br><br> --}}
+
+    <button type="submit">Registrar</button>
+</form>
+
+{{!-- Falta  lo siguiente
+    first_name:String,
+    last_name:String,
+    email:{
+        type:String,
+        unique: true
+    },
+    age:Number,
+    password: String,
+    cart: String,
+    // usuario: String,
+    rol:{
+        type:String,
+        enum: ["admin","user"],
+        default:"user"
+    }
+ --}}
+{{!-- HAY QUE HACER MAS COMPLEJO ESTO SEGUN LA PRE ENTREGA --}}
