@@ -12,8 +12,8 @@ import viewsRouter from "./routes/views.router.js"
 import mongoose from "mongoose";
 import cartModel from "./models/cart.model.js";
 import productModel from "./models/products.model.js";
-import initializePassport from "./config/passport.config.js";
 import passport from "passport";
+import initializePassport from "./config/passport.config.js";
 import cookieParser from "cookie-parser";
 
 
