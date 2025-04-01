@@ -11,5 +11,6 @@ router.post("/login",userController.login)
 // router.get("/current", passport.authenticate("jwt",{session:false}),userController.current)
 router.get("/current", passport.authenticate("current",{session:false}),userController.current)
 router.post("/logout",userController.logout)
+router.get("/admin", passport.authenticate("current", { session: false }), userController.admin);
 
 export default router

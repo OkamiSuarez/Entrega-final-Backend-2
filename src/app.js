@@ -1,34 +1,25 @@
-// const express  = require('express')
+// import mongoose from "mongoose";
+// import cartModel from "./models/cart.model.js";
+// import productModel from "./models/products.model.js";
 import express from  "express"
 const app = express();
 const PUERTO = 8080;
 
-import sessionsRouter from "./routes/sessions.router.js"
 import productRouter from "./routes/product.router.js"
 import cartRouter from "./routes/cart.router.js"
+import viewsRouter from "./routes/views.router.js"
+import sessionsRouter from "./routes/sessions.router.js"
 import { engine } from "express-handlebars";
 import { Server } from "socket.io";
-import viewsRouter from "./routes/views.router.js"
-import mongoose from "mongoose";
-import cartModel from "./models/cart.model.js";
-import productModel from "./models/products.model.js";
 import passport from "passport";
 import initializePassport from "./config/passport.config.js";
 import cookieParser from "cookie-parser";
-
-
-const main = async () =>{
-    // mongoose.connect("mongodb+srv://okami97backdev:coderhouse@cluster0.tfr60.mongodb.net/Backend2PreEntrega1?retryWrites=true&w=majority&appName=Cluster0")
-    // tal vez hay que cambiarlo a la que era antes 
-    mongoose.connect("mongodb+srv://okami97backdev:coderhouse@cluster0.tfr60.mongodb.net/EntregaFinal?retryWrites=true&w=majority&appName=Cluster0")
-    .then(()=> console.log('Conexion exitosa a la DB'))
-    .catch((error)=>console.log("hay un problema con db", error))
-}
-
-main()
+import "./database.js"
+import cors from "cors"
 
 // middleware
 app.use(express.json())
+app.use(cors())
 // se declara al server que se va a trabajar con JSON
 app.use(express.urlencoded({extended: true}))
 app.use(express.static("./src/public"))
@@ -58,11 +49,8 @@ const httpServer = app.listen(PUERTO,()=>{
 })
 
 // websockets
-
 import ProductManager from "./managers/product-manager.js";
 const manager = new ProductManager("./src/data/productos.json")
-
-
 const io =  new Server(httpServer)
 io.on("connection",async(socket)=>{
     console.log("cliente conectado")

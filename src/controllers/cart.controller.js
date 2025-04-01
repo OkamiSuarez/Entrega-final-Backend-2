@@ -1,163 +1,159 @@
-// todo esto es referencia, hay que codear lo que se adapta de aqui
-
-const TicketModel = require("../models/ticket.model.js");
-const UserModel = require("../models/user.model.js");
-const CartRepository = require("../repositories/cart.repository.js");
-const cartRepository = new CartRepository();
-const ProductRepository = require("../repositories/product.repository.js");
-const productRepository = new ProductRepository();
-const { generateUniqueCode, calcularTotal } = require("../utils/cartutils.js");
-
-
-
-
-class CartController {
-    async nuevoCarrito(req, res) {
+// import CartManager from "../managers/cart-manager.js"
+import cartModel from "../models/cart.model.js";
+import productModel from "../models/products.model.js";
+class CartController{
+    async getCart(req,res){
         try {
-            const nuevoCarrito = await cartRepository.crearCarrito();
-            res.json(nuevoCarrito);
+            const getCart = await cartModel.find()
+            res.send(getCart)
         } catch (error) {
-            res.status(500).send("Error");
+            res.status(500).json({ mensaje: 'Error al obtener el cart' })
         }
     }
-
-    async obtenerProductosDeCarrito(req, res) {
-        const carritoId = req.params.cid;
+    async getCidCart(req,res){
         try {
-            const productos = await cartRepository.obtenerProductosDeCarrito(carritoId);
-            if (!productos) {
-                return res.status(404).json({ error: "Carrito no encontrado" });
+            const getCart = await cartModel.findById(req.params.cid).populate('products.product').lean()
+            res.send(getCart)
+        } catch (error) {
+            res.status(500).send("no se pudo encontrar")
+        }
+    }
+    async postCart(req,res){
+            try {
+                const addCart = new cartModel(req.body)
+                await addCart.save()
+                res.send({ mensaje: 'Carrito creado exitosamente', addCart })
+            } catch (error) {
+                res.status(500).json({ mensaje: 'Error al agregar un producto al carrito' })
             }
-            res.json(productos);
+    }
+    async postCidPidCart(req,res){
+            // CREAR CARRITO CON POPULATE 
+        try {
+            const getCart = await cartModel.findById(req.params.cid)
+            const getProduct = await productModel.findById(req.params.pid)
+            getCart.products.push({
+                product: getProduct,
+                quantity: 1
+            })
+            await getCart.save()
+            res.send({ mensaje: "producto agregado", getCart })
         } catch (error) {
-            res.status(500).send("Error");
+            console.log(error)
         }
     }
+    async putCidCart(req,res){
+        
+    try {
+        const { cid } = req.params;
+        const { products } = req.body;
 
-    async agregarProductoEnCarrito(req, res) {
-        const cartId = req.params.cid;
-        const productId = req.params.pid;
-        const quantity = req.body.quantity || 1;
-        try {
-            await cartRepository.agregarProducto(cartId, productId, quantity);
-            const carritoID = (req.user.cart).toString();
-
-            res.redirect(`/carts/${carritoID}`)
-        } catch (error) {
-            res.status(500).send("Error");
+        // Validar que products sea un arreglo
+        if (!Array.isArray(products)) {
+            return res.status(400).send("El campo 'products' debe ser un arreglo");
         }
+
+        // Validar la estructura de cada producto en el arreglo
+        const validProducts = products.every(item => 
+            mongoose.Types.ObjectId.isValid(item.product) && 
+            Number.isInteger(item.quantity) && 
+            item.quantity >= 0
+        );
+
+        if (!validProducts) {
+            return res.status(400).send("Estructura de productos inválida");
+        }
+
+        // Actualizar el carrito
+        const updatedCart = await cartModel.findByIdAndUpdate(
+            cid,
+            { $set: { products: products } },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedCart) {
+            return res.status(404).send("Carrito no encontrado");
+        }
+
+        res.status(200).json({
+            status: "success",
+            message: "Carrito actualizado exitosamente",
+            cart: updatedCart
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("No se pudo actualizar el carrito: " + error.message);
     }
 
-    async eliminarProductoDeCarrito(req, res) {
-        const cartId = req.params.cid;
-        const productId = req.params.pid;
+    try {
+        const putCart = await cartModel.findByIdAndUpdate(req.params.cid, req.body)
+        res.send("Producto actualizado")
+    } catch (error) {
+        res.status(500).send("no se pudo actualizar")
+    }
+    }
+    async deleteCidCart(req,res){
         try {
-            const updatedCart = await cartRepository.eliminarProducto(cartId, productId);
-            res.json({
-                status: 'success',
-                message: 'Producto eliminado del carrito correctamente',
-                updatedCart,
-            });
+            const delCart = await cartModel.findByIdAndDelete(req.params.cid)
+            if (!delCart) {
+                return res.json({
+                    error: "Producto no encontrado por ID"
+                });
+            }
+            res.send('Producto eliminado')
         } catch (error) {
-            res.status(500).send("Error");
+            res.status(500).send("no se pudo eliminar el carrito")
         }
     }
-
-    async actualizarProductosEnCarrito(req, res) {
-        const cartId = req.params.cid;
-        const updatedProducts = req.body;
-        // Debes enviar un arreglo de productos en el cuerpo de la solicitud
+    async deleteCidPidCart(req,res){
         try {
-            const updatedCart = await cartRepository.actualizarProductosEnCarrito(cartId, updatedProducts);
-            res.json(updatedCart);
+            const cartId = req.params.cid;
+            const productId = req.params.pid;
+            const updatedCart = await cartModel.findByIdAndUpdate(
+                cartId,
+                { $pull: { products: { "_id": productId } } },
+                { new: true }
+            ).populate('products.product');
+            if (!updatedCart) {
+                return res.status(404).json({ mensaje: "Carrito no encontrado" });
+            }
+            res.send({ mensaje: "producto eliminado", updatedCart })
         } catch (error) {
-            res.status(500).send("Error");
+            console.log(error)
         }
     }
-
-    async actualizarCantidad(req, res) {
-        const cartId = req.params.cid;
-        const productId = req.params.pid;
-        const newQuantity = req.body.quantity;
-        try {
-            const updatedCart = await cartRepository.actualizarCantidadesEnCarrito(cartId, productId, newQuantity);
-
-            res.json({
-                status: 'success',
-                message: 'Cantidad del producto actualizada correctamente',
-                updatedCart,
-            });
-
-        } catch (error) {
-            res.status(500).send("Error al actualizar la cantidad de productos");
-        }
-    }
-
-    async vaciarCarrito(req, res) {
-        const cartId = req.params.cid;
-        try {
-            const updatedCart = await cartRepository.vaciarCarrito(cartId);
-
-            res.json({
-                status: 'success',
-                message: 'Todos los productos del carrito fueron eliminados correctamente',
-                updatedCart,
-            });
-
-        } catch (error) {
-            res.status(500).send("Error");
-        }
-    }
-
-    //Ultima Pre Entrega: 
-    async finalizarCompra(req, res) {
-        const cartId = req.params.cid;
-        try {
-            // Obtener el carrito y sus productos
-            const cart = await cartRepository.obtenerProductosDeCarrito(cartId);
-            const products = cart.products;
-
-            // Inicializar un arreglo para almacenar los productos no disponibles
-            const productosNoDisponibles = [];
-
-            // Verificar el stock y actualizar los productos disponibles
-            for (const item of products) {
-                const productId = item.product;
-                const product = await productRepository.obtenerProductoPorId(productId);
-                if (product.stock >= item.quantity) {
-                    // Si hay suficiente stock, restar la cantidad del producto
-                    product.stock -= item.quantity;
-                    await product.save();
-                } else {
-                    // Si no hay suficiente stock, agregar el ID del producto al arreglo de no disponibles
-                    productosNoDisponibles.push(productId);
+    async putCidPidCart(req,res){
+            // SOLO LA QTY LA EDITA
+            // RECIBIR Y MODIFICAR NADA MAS ESO 
+        
+            try {
+                const cartId = req.params.cid;
+                const productId = req.params.pid;
+                const { quantity } = req.body
+                if (!quantity || quantity < 0) {
+                    return res.status(400).json({ mensaje: "Cantidad inválida" });
                 }
+                const updatedCart = await cartModel.findOneAndUpdate(
+                    {
+                        _id: cartId,
+                        "products._id": productId
+                    },
+                    {
+                        $set: {"products.$.quantity": quantity} 
+                    },
+                    {
+                        new: true
+                    }
+                ).populate('products.product');;
+                res.send({ mensaje: "producto actualizado", updatedCart })
+            } catch (error) {
+                console.log(error)
             }
-
-            const userWithCart = await UserModel.findOne({ cart: cartId });
-
-            // Crear un ticket con los datos de la compra
-            const ticket = new TicketModel({
-                code: generateUniqueCode(),
-                purchase_datetime: new Date(),
-                amount: calcularTotal(cart.products),
-                purchaser: userWithCart._id
-            });
-            await ticket.save();
-
-            // Eliminar del carrito los productos que sí se compraron
-            cart.products = cart.products.filter(item => productosNoDisponibles.some(productId => productId.equals(item.product)));
-
-            // Guardar el carrito actualizado en la base de datos
-            await cart.save();
-
-            res.status(200).json({ productosNoDisponibles });
-        } catch (error) {
-            console.error('Error al procesar la compra:', error);
-            res.status(500).json({ error: 'Error interno del servidor' });
-        }
+        
     }
-
+    async postCidPurchase(req,res){
+        // pendiente
+    }
 }
 
-module.exports = CartController;
+export default CartController
