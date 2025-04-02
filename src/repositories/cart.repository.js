@@ -13,14 +13,16 @@ class CartRepository {
 
     async obtenerProductosDeCarrito(idCarrito) {
         try {
-            const carrito = await CartModel.findById(idCarrito);
+            const carrito = await CartModel.findById(idCarrito)
+                .populate('products.product')
+                .lean();
             if (!carrito) {
                 console.log("No existe ese carrito con el id");
                 return null;
             }
             return carrito;
         } catch (error) {
-            throw new Error("Error");
+            throw new Error("Error al obtener los productos del carrito");
         }
     }
 
@@ -66,14 +68,17 @@ class CartRepository {
             if (!cart) {
                 throw new Error('Carrito no encontrado');
             }
-
+            // Validar que updatedProducts sea un arreglo
+            if (!Array.isArray(updatedProducts)) {
+                throw new Error('La lista de productos actualizados no es válida');
+            }
             cart.products = updatedProducts;
 
             cart.markModified('products');
             await cart.save();
             return cart;
         } catch (error) {
-            throw new Error("Error");
+            throw new Error(`Error al actualizar los productos del carrito: ${error.message}`);
         }
     }
 

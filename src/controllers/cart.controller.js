@@ -156,7 +156,7 @@ class CartController{
     }
     async postCidPurchase(req, res) {
         const cartId = req.params.cid;
-    
+
         function generateUniqueCode() {
             return `TICKET-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         }
@@ -196,11 +196,25 @@ class CartController{
             if (!userWithCart) {
                 return res.status(404).json({ mensaje: "Usuario asociado al carrito no encontrado" });
             }
+            if (isNaN(totalAmount) || totalAmount <= 0) {
+                return res.status(400).json({ mensaje: "El monto total de la compra no es válido" });
+            }
+            
+            if (!userWithCart || !userWithCart._id) {
+                return res.status(400).json({ mensaje: "Usuario asociado al carrito no válido" });
+            }
     
             // Calcular el total de la compra
             const totalAmount = products
-                .filter(item => !productosNoDisponibles.includes(item.product._id))
-                .reduce((total, item) => total + item.product.price * item.quantity, 0);
+            .filter(item => {
+                // Verificar que el producto tenga un precio y una cantidad válidos
+                if (!item.product || typeof item.product.price !== "number" || typeof item.quantity !== "number") {
+                    console.warn(`Producto inválido o datos faltantes: ${JSON.stringify(item)}`);
+                    return false; 
+                }
+                return !productosNoDisponibles.includes(item.product._id);
+            })
+            .reduce((total, item) => total + item.product.price * item.quantity, 0);
     
             // Crear un ticket con los datos de la compra
             const ticket = new TicketModel({
@@ -226,7 +240,7 @@ class CartController{
             });
         } catch (error) {
             console.error("Error al procesar la compra:", error);
-            res.status(500).json({ error: "Error interno del servidor" });
+            res.status(500).json({ error: "Error interno del servidor", detalles: error.message });
         }
     }
 }
