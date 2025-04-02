@@ -119,7 +119,7 @@ class UserController{
 //         // res.render("home",{user: userDTO})
 //         res.render("profile",{user: UserDTO})
 
-        res.render("profile", { user: UserDTO })
+        res.render("profile", { user: userDTO, rol:user.rol })
     } else {
         res.send("no estas autorizado amiguito")
     }

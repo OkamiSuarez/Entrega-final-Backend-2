@@ -1,6 +1,9 @@
 // import CartManager from "../managers/cart-manager.js"
 import cartModel from "../models/cart.model.js";
 import productModel from "../models/products.model.js";
+import UsuarioModel from "../models/user.model.js";
+import TicketModel from "../models/ticket.model.js";
+import CartRepository from "../repositories/cart.repository.js";
 class CartController{
     async getCart(req,res){
         try {
@@ -151,8 +154,80 @@ class CartController{
             }
         
     }
-    async postCidPurchase(req,res){
-        // pendiente
+    async postCidPurchase(req, res) {
+        const cartId = req.params.cid;
+    
+        function generateUniqueCode() {
+            return `TICKET-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        }
+    
+        try {
+            // Obtener el carrito utilizando el repositorio
+            const cart = await CartRepository.obtenerProductosDeCarrito(cartId);
+            if (!cart) {
+                return res.status(404).json({ mensaje: "Carrito no encontrado" });
+            }
+    
+            const products = cart.products;
+    
+            // Inicializar un arreglo para almacenar los productos no disponibles
+            const productosNoDisponibles = [];
+    
+            // Verificar el stock y actualizar los productos disponibles
+            for (const item of products) {
+                const product = await productModel.findById(item.product._id);
+                if (!product) {
+                    productosNoDisponibles.push(item.product._id);
+                    continue;
+                }
+    
+                if (product.stock >= item.quantity) {
+                    // Si hay suficiente stock, restar la cantidad del producto
+                    product.stock -= item.quantity;
+                    await product.save();
+                } else {
+                    // Si no hay suficiente stock, agregar el ID del producto al arreglo de no disponibles
+                    productosNoDisponibles.push(item.product._id);
+                }
+            }
+    
+            // Obtener el usuario asociado al carrito
+            const userWithCart = await UsuarioModel.findOne({ cart: cartId });
+            if (!userWithCart) {
+                return res.status(404).json({ mensaje: "Usuario asociado al carrito no encontrado" });
+            }
+    
+            // Calcular el total de la compra
+            const totalAmount = products
+                .filter(item => !productosNoDisponibles.includes(item.product._id))
+                .reduce((total, item) => total + item.product.price * item.quantity, 0);
+    
+            // Crear un ticket con los datos de la compra
+            const ticket = new TicketModel({
+                code: generateUniqueCode(),
+                purchase_datetime: new Date(),
+                amount: totalAmount,
+                purchaser: userWithCart._id
+            });
+            await ticket.save();
+    
+            // Eliminar del carrito los productos que sí se compraron
+            const productosRestantes = products.filter(item =>
+                productosNoDisponibles.includes(item.product._id)
+            );
+    
+            // Actualizar el carrito utilizando el repositorio
+            await CartRepository.actualizarProductosEnCarrito(cartId, productosRestantes);
+    
+            res.status(200).json({
+                mensaje: "Compra procesada exitosamente",
+                productosNoDisponibles,
+                ticket
+            });
+        } catch (error) {
+            console.error("Error al procesar la compra:", error);
+            res.status(500).json({ error: "Error interno del servidor" });
+        }
     }
 }
 

@@ -1,0 +1,25 @@
+
+    <h1>{{mensaje}}</h1>
+
+    <h2>Ticket de Compra</h2>
+    <p><strong>Código:</strong> {{ticket.code}}</p>
+    <p><strong>Fecha:</strong> {{ticket.purchase_datetime}}</p>
+    <p><strong>Total:</strong> ${{ticket.amount}}</p>
+
+    <h2>Productos Comprados</h2>
+    <ul>
+        {{#each productosComprados}}
+        <li>
+            <strong>Producto:</strong> {{this.product.name}} <br>
+            <strong>Cantidad:</strong> {{this.quantity}} <br>
+            <strong>Precio:</strong> ${{this.product.price}}
+        </li>
+        {{/each}}
+    </ul>
+
+    <h2>Productos No Disponibles</h2>
+    <ul>
+        {{#each productosNoDisponibles}}
+        <li>Producto ID: {{this}}</li>
+        {{/each}}
+    </ul>

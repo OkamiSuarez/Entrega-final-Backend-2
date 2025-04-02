@@ -16,6 +16,7 @@ import initializePassport from "./config/passport.config.js";
 import cookieParser from "cookie-parser";
 import "./database.js"
 import cors from "cors"
+// import path from "path"
 
 // middleware
 app.use(express.json())

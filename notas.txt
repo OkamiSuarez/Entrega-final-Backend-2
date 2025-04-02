@@ -1,7 +1,0 @@
-Hay que armar lo mismo que ya tenemos pero para las demas, ahorita se hizo el de user pero faltaria el de carts y products
-Ya quedaron los controllers y el ruteo mas avanzado
-
-en algunos lados esta como role y en otros como rol, mongo lo tiene como rol
-ya tambien se arreglo esto 
-
-cart controller esta aun faltante de info
